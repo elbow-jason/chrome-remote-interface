@@ -6,6 +6,8 @@ defmodule ChromeRemoteInterface.Protocol do
     Server
   }
 
+  @default_file "priv/protocol.json"
+
   def fetch_protocol() do
     with(
       :error <- try_to_load_from_url(),
@@ -14,11 +16,20 @@ defmodule ChromeRemoteInterface.Protocol do
       {:error, :protocol_is_misconfigured}
     else
       {:file, file, json} ->
-        Logger.info("Fetched protocol.json from file #{inspect(file)}")
+        log("ChromeRemoteInterface fetched protocol.json from file #{inspect(file)}")
         {:ok, file, json}
       {:url, url, json} ->
-        Logger.info("Fetched protocol.json from url #{inspect(url)}")
+        log("ChromeRemoteInterface fetched protocol.json from url #{inspect(url)}")
         {:ok, url, json}
+    end
+  end
+
+  defp log(message) do
+    case fetch_config(:log) do
+      {:ok, true} ->
+        Logger.info(message)
+      _ ->
+        :ok
     end
   end
 
@@ -34,13 +45,20 @@ defmodule ChromeRemoteInterface.Protocol do
   end
 
   defp try_to_load_from_file() do
-    with(
-      {:ok, file} <- fetch_config(:file),
-      {:ok, json} <- fetch_by_filepath(file)
-    ) do
-      {:file, file, json}
-    else
-      _ -> :error
+    case fetch_config(:file) do
+      {:ok, file} ->
+        try_to_load_from_file(file)
+      :error ->
+        try_to_load_from_file(@default_file)
+    end
+  end
+
+  defp try_to_load_from_file(file) do
+    case fetch_by_filepath(file) do
+      {:ok, json} ->
+        {:file, file, json}
+      _ ->
+        :error
     end
   end
 
@@ -61,7 +79,6 @@ defmodule ChromeRemoteInterface.Protocol do
     with(
       {:ok, bytes} <- File.read(filepath)
     ) do
-      Logger.info("Fetched protocol from file #{inspect(filepath)}")
       {:ok, bytes}
     else
       {:error, _} = err -> err
