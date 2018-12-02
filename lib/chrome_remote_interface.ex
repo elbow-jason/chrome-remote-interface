@@ -3,11 +3,14 @@ defmodule ChromeRemoteInterface do
   Documentation for ChromeRemoteInterface.
   """
 
-  alias ChromeRemoteInterface.PageSession
+  alias ChromeRemoteInterface.{
+    PageSession,
+    Protocol
+  }
 
-  protocol =
-    File.read!("priv/protocol.json")
-    |> Poison.decode!()
+  Application.ensure_all_started(:hackney)
+  {:ok, _source, json} = Protocol.fetch_protocol()
+  protocol = Poison.decode!(json)
 
   # Generate ChromeRemoteInterface.RPC Modules
 

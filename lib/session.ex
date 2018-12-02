@@ -28,6 +28,10 @@ defmodule ChromeRemoteInterface.Session do
     }
   end
 
+  def init(args) do
+    {:ok, args}
+  end
+
   @doc """
   List all Pages.
 
